@@ -41,23 +41,51 @@ type MaximizerChannelLane = {
   process: (chunkBuffer: Float32Array, workLength: number) => void;
 };
 
+type Span = {
+  si0: number;
+  si1: number;
+  sustaining: boolean;
+  peakLevel?: number; //positive
+};
+
+type SpansPool = {
+  acquire(si0: number, si1: number, sustaining: boolean): Span;
+  releases(spans: Span[]): void;
+};
+
+function createSpansPool(): SpansPool {
+  const items: Span[] = [];
+  return {
+    acquire(si0, si1, sustaining) {
+      const item = items.pop();
+      if (item) {
+        item.si0 = si0;
+        item.si1 = si1;
+        item.sustaining = sustaining;
+        item.peakLevel = undefined;
+        return item;
+      }
+      return { si0, si1, sustaining };
+    },
+    releases(spans) {
+      for (const span of spans) {
+        items.push(span);
+      }
+    },
+  };
+}
+const spansPool = createSpansPool();
+
 function createMaximizerChannelLane(
   maxBufferLength: number, //maxWorkLength + chunkSize * 2
 ): MaximizerChannelLane {
   const bufferLine = new Float32Array(maxBufferLength);
 
-  type Span = {
-    si0: number;
-    si1: number;
-    sustaining: boolean;
-    peakLevel?: number; //positive
-  };
-
+  const spans: Span[] = [];
   let runningPeak: number | null = null;
 
   const internal = {
     processInternal(chunkSize: number, workLength: number) {
-      let spans: Span[] = []; //todo: make object pool
       let si0 = 0;
 
       //input looking phase, split samples into spans by zero crossings
@@ -66,14 +94,17 @@ function createMaximizerChannelLane(
         const sample = bufferLine[i];
         if (sample * prevSample < 0 || (prevSample !== 0 && sample === 0)) {
           const si1 = i;
-          spans.push({ si0, si1, sustaining: false });
+          const sustaining = false;
+          spans.push(spansPool.acquire(si0, si1, sustaining));
           si0 = i;
           if (si1 >= chunkSize) break;
         }
       }
       let lastSpan = spans.at(-1);
       if (!(lastSpan && lastSpan.si1 >= chunkSize)) {
-        spans.push({ si0, si1: workLength, sustaining: true });
+        const si1 = workLength;
+        const sustaining = true;
+        spans.push(spansPool.acquire(si0, si1, sustaining));
       }
 
       //find peak for spans
@@ -118,6 +149,8 @@ function createMaximizerChannelLane(
           bufferLine[i] = bufferLine[i] * gain;
         }
       }
+      spansPool.releases(spans);
+      spans.length = 0;
     },
   };
 
