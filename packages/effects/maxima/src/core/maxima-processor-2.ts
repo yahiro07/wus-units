@@ -1,3 +1,5 @@
+import { clampValue } from "@/utils/helpers";
+
 export {};
 
 const configs = {
@@ -5,8 +7,8 @@ const configs = {
 };
 
 const helpers = {
-  calcSamplesLength(seconds: number, sampleRate: number) {
-    return Math.round(seconds * sampleRate);
+  calcSamplesLength(ms: number, sampleRate: number) {
+    return Math.round((ms / 1000) * sampleRate);
   },
   writeBuffer(
     dest: Float32Array,
@@ -40,49 +42,80 @@ type MaximizerChannelLane = {
 };
 
 function createMaximizerChannelLane(
-  maxBufferLength: number, //maxWorkLength + chunkSize
+  maxBufferLength: number, //maxWorkLength + chunkSize * 2
 ): MaximizerChannelLane {
   const bufferLine = new Float32Array(maxBufferLength);
 
   type Span = {
     si0: number;
     si1: number;
-    peakLevel: number; //positive
+    sustaining: boolean;
+    peakLevel?: number; //positive
   };
 
-  let lastPeakLevel = 0;
-  let prevInputSample = 0;
+  let runningPeak: number | null = null;
 
   const internal = {
     processInternal(chunkSize: number, workLength: number) {
-      let spans: Span[] = [];
+      let spans: Span[] = []; //todo: make object pool
       let si0 = 0;
 
       //input looking phase, split samples into spans by zero crossings
-      for (let i = 0; i < workLength; i++) {
+      for (let i = 1; i < workLength; i++) {
+        const prevSample = bufferLine[i - 1];
         const sample = bufferLine[i];
-        if (sample * prevInputSample < 0) {
-          let peakLevel = helpers.findPeakLevel(bufferLine, si0, i);
-          if (spans.length === 0 && lastPeakLevel > peakLevel) {
-            peakLevel = lastPeakLevel;
-          }
-          spans.push({ si0, si1: i, peakLevel });
+        if (sample * prevSample < 0 || (prevSample !== 0 && sample === 0)) {
+          const si1 = i;
+          spans.push({ si0, si1, sustaining: false });
           si0 = i;
-          if (i >= chunkSize) break;
+          if (si1 >= chunkSize) break;
         }
-        prevInputSample = sample;
       }
-      if (spans.length === 0) {
-        spans.push({ si0, si1: workLength, peakLevel: lastPeakLevel });
+      let lastSpan = spans.at(-1);
+      if (!(lastSpan && lastSpan.si1 >= chunkSize)) {
+        spans.push({ si0, si1: workLength, sustaining: true });
       }
-      lastPeakLevel = spans.at(-1)?.peakLevel ?? 0;
+
+      //find peak for spans
+      for (const span of spans) {
+        const { si0, si1 } = span;
+        let peakLevel = helpers.findPeakLevel(bufferLine, si0, si1);
+        if (si0 === 0 && runningPeak) {
+          if (span.sustaining) {
+            //treatment for multiple continuous non zero-crossing frames
+            if (0) {
+              //keep previous peak
+              //this causes clipping if higher peaks found in the new frame
+              peakLevel = runningPeak;
+            } else {
+              //take max
+              //this causes a step between chunks
+              peakLevel = Math.max(runningPeak, peakLevel);
+            }
+            //some interpolation could be used to improve these but
+            //we don't adopt it here since the logic gets more complex
+          } else {
+            //this is no problem since the new span is closed
+            peakLevel = Math.max(runningPeak, peakLevel);
+          }
+        }
+        span.peakLevel = peakLevel;
+      }
+
+      lastSpan = spans.at(-1);
+      if (lastSpan?.sustaining) {
+        runningPeak = lastSpan.peakLevel!;
+      } else {
+        runningPeak = null;
+      }
 
       //output phase, normalize spans
       for (const span of spans) {
         const { si0, si1, peakLevel } = span;
+        const gain = peakLevel ? 1 / peakLevel : 1;
         for (let i = si0; i < si1; i++) {
           if (i >= chunkSize) break;
-          bufferLine[i] = bufferLine[i] / peakLevel;
+          bufferLine[i] = bufferLine[i] * gain;
         }
       }
     },
@@ -109,9 +142,11 @@ function createProcessorImpl() {
   const internal = {
     ensureResources(sampleRate: number, chunkLength: number) {
       if (sampleRate !== lastSampleRate || chunkLength !== lastChunkLength) {
-        const maxBufferLength =
-          helpers.calcSamplesLength(configs.maxLookaheadMs, sampleRate) +
-          chunkLength;
+        const maxWorkLength = helpers.calcSamplesLength(
+          configs.maxLookaheadMs,
+          sampleRate,
+        );
+        const maxBufferLength = maxWorkLength + chunkLength * 2;
         laneLeft = createMaximizerChannelLane(maxBufferLength);
         laneRight = createMaximizerChannelLane(maxBufferLength);
         lastSampleRate = sampleRate;
@@ -130,14 +165,16 @@ function createProcessorImpl() {
       parameters: Record<string, Float32Array>,
       sampleRate: number,
     ) {
-      const [inputL, inputR] = inputs[0];
-      const [outputL, outputR] = outputs[0];
-      if (!outputL) return true;
+      const input = inputs[0];
+      const output = outputs[0];
+      if (!(input && output)) return true;
+      const [inputL, inputR] = input;
+      const [outputL, outputR] = output;
 
       const chunkLength = inputL.length;
       internal.ensureResources(sampleRate, chunkLength);
 
-      const lookaheadSec = parameters.lookahead[0] ?? 5;
+      const lookaheadSec = clampValue(parameters.lookahead[0] ?? 5, 1, 50);
       const workLength =
         helpers.calcSamplesLength(lookaheadSec, sampleRate) + chunkLength;
 
