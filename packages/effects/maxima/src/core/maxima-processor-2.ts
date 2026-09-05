@@ -1,10 +1,16 @@
 import { clampValue } from "@/utils/helpers";
-import { mapUnaryTo, power2 } from "@/utils/synth-math-utils";
+import {
+  mapUnaryFrom,
+  mapUnaryTo,
+  tunableSigmoid,
+} from "@/utils/synth-math-utils";
 
 export {};
 
 const configs = {
   maxLookaheadMs: 50,
+  w0: 0,
+  w1: 0.5,
 };
 
 const helpers = {
@@ -159,14 +165,25 @@ function createMaximizerChannelLane(
         runningPeak = null;
       }
 
-      const prDrive = parameters.drive;
+      const level = parameters.drive / 24;
+      const curve2 = parameters.curve;
+      const dx0 = mapUnaryTo(configs.w0, 1, 40);
+      let dx1 = mapUnaryTo(configs.w1, 1, 40);
+      if (dx1 <= dx0) {
+        dx1 = dx0 + 1;
+      }
+      const k2 = mapUnaryTo(curve2, 0.9, -0.9);
 
       //output phase, normalize spans
       for (const span of spans) {
         const { si0, si1 } = span;
-        const peakLevel = span.peakLevel!;
-        const top = mapUnaryTo(power2(prDrive / 24), peakLevel, 1);
-        const gain = peakLevel ? top / peakLevel : 1;
+        const pk = span.peakLevel!;
+        const targetLevel = mapUnaryTo(level, pk, 1);
+        const rawGain = pk === 0 ? 1 : targetLevel / pk;
+        const dx = si1 - si0;
+        let w = mapUnaryFrom(dx, dx0, dx1, true);
+        w = tunableSigmoid(w, k2);
+        const gain = mapUnaryTo(w, 1, rawGain);
         for (let i = si0; i < si1; i++) {
           if (i >= chunkSize) break;
           bufferLine[i] = bufferLine[i] * gain;
