@@ -1,6 +1,6 @@
 import { UnitInterface } from "wafer-host/unit-types";
 import { defaultEffectParameters, EffectParameters } from "@/core/definitions";
-import workletUrl from "./maxima-processor?worker&url";
+import workletUrl from "./maxima-processor-2?worker&url";
 import { mapKnobCurveCenterUnity } from "@/core/volume-curve";
 
 export function createEngine(unitInterface: UnitInterface | undefined) {
@@ -20,7 +20,7 @@ export function createEngine(unitInterface: UnitInterface | undefined) {
       return;
     }
 
-    workletNode = new AudioWorkletNode(audioContext, "maxima-processor");
+    workletNode = new AudioWorkletNode(audioContext, "maxima-processor-2");
     if (isPassthroughConnected) {
       inputNode.disconnect(gainNode);
       isPassthroughConnected = false;

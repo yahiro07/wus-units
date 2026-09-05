@@ -1,4 +1,5 @@
 import { clampValue } from "@/utils/helpers";
+import { mapUnaryTo, power2 } from "@/utils/synth-math-utils";
 
 export {};
 
@@ -38,7 +39,8 @@ const helpers = {
 };
 
 type MaximizerChannelLane = {
-  process: (chunkBuffer: Float32Array, workLength: number) => void;
+  setParameters: (params: MaximizerParameters) => void;
+  process: (chunkBuffer: Float32Array) => void;
 };
 
 type Span = {
@@ -76,15 +78,32 @@ function createSpansPool(): SpansPool {
 }
 const spansPool = createSpansPool();
 
+type MaximizerParameters = {
+  drive: number;
+  curve: number;
+  ceiling: number;
+  lookahead: number;
+};
+
 function createMaximizerChannelLane(
   maxBufferLength: number, //maxWorkLength + chunkSize * 2
 ): MaximizerChannelLane {
   const bufferLine = new Float32Array(maxBufferLength);
+  const parameters: MaximizerParameters = {
+    drive: 0,
+    curve: 0,
+    ceiling: 1,
+    lookahead: 0.5,
+  };
 
   const spans: Span[] = [];
   let runningPeak: number | null = null;
 
   const internal = {
+    getWorkLength(chunkLength: number) {
+      const lookaheadSec = parameters.lookahead;
+      return helpers.calcSamplesLength(lookaheadSec, sampleRate) + chunkLength;
+    },
     processInternal(chunkSize: number, workLength: number) {
       let si0 = 0;
 
@@ -140,10 +159,14 @@ function createMaximizerChannelLane(
         runningPeak = null;
       }
 
+      const prDrive = parameters.drive;
+
       //output phase, normalize spans
       for (const span of spans) {
-        const { si0, si1, peakLevel } = span;
-        const gain = peakLevel ? 1 / peakLevel : 1;
+        const { si0, si1 } = span;
+        const peakLevel = span.peakLevel!;
+        const top = mapUnaryTo(power2(prDrive / 24), peakLevel, 1);
+        const gain = peakLevel ? top / peakLevel : 1;
         for (let i = si0; i < si1; i++) {
           if (i >= chunkSize) break;
           bufferLine[i] = bufferLine[i] * gain;
@@ -155,8 +178,12 @@ function createMaximizerChannelLane(
   };
 
   return {
-    process(chunkBuffer: Float32Array, workLength: number) {
+    setParameters(params: MaximizerParameters) {
+      Object.assign(parameters, params);
+    },
+    process(chunkBuffer: Float32Array) {
       const chunkSize = chunkBuffer.length;
+      const workLength = internal.getWorkLength(chunkSize);
       helpers.writeBuffer(bufferLine, workLength, chunkBuffer, chunkSize); //tail block <-- input samples
       helpers.shiftBufferContent(bufferLine, chunkSize); //shift block
       internal.processInternal(chunkSize, workLength);
@@ -203,20 +230,34 @@ function createProcessorImpl() {
       if (!(input && output)) return true;
       const [inputL, inputR] = input;
       const [outputL, outputR] = output;
+      if (!inputL || !outputL) return true;
 
       const chunkLength = inputL.length;
       internal.ensureResources(sampleRate, chunkLength);
 
-      const lookaheadSec = clampValue(parameters.lookahead[0] ?? 5, 1, 50);
-      const workLength =
-        helpers.calcSamplesLength(lookaheadSec, sampleRate) + chunkLength;
+      const prDrive = clampValue(parameters.drive[0] ?? 0, 0, 24);
+      const prCurve = clampValue(parameters.curve[0] ?? 0, 0, 1);
+      const prCeiling = clampValue(parameters.ceiling[0] ?? -1, -18, 0);
+      const prLookahead = clampValue(parameters.lookahead[0] ?? 5, 1, 50);
+      laneLeft?.setParameters({
+        drive: prDrive,
+        curve: prCurve,
+        ceiling: prCeiling,
+        lookahead: prLookahead,
+      });
+      laneRight?.setParameters({
+        drive: prDrive,
+        curve: prCurve,
+        ceiling: prCeiling,
+        lookahead: prLookahead,
+      });
 
       chunkBuffer.set(inputL);
-      laneLeft?.process(chunkBuffer, workLength);
+      laneLeft?.process(chunkBuffer);
       outputL.set(chunkBuffer);
       if (inputR && outputR) {
         chunkBuffer.set(inputR);
-        laneRight?.process(chunkBuffer, workLength);
+        laneRight?.process(chunkBuffer);
         outputR.set(chunkBuffer);
       }
     },
