@@ -1,3 +1,5 @@
+export {};
+
 class MaximaProcessor extends AudioWorkletProcessor {
   private readonly maximizer = createMaximizer(
     Math.round((maxLookaheadMs / 1000) * sampleRate),
