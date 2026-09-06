@@ -4,15 +4,11 @@ export const GridBackground = ({
   className,
   nx,
   ny,
-  bgAlterStrideX,
 }: {
   className?: string;
   nx: number;
   ny: number;
-  bgAlterStrideX?: number;
 }) => {
-  const bgAlterStride = bgAlterStrideX ?? 0;
-
   return (
     <div
       className={css(
@@ -37,14 +33,13 @@ export const GridBackground = ({
       {Array.from({ length: nx * ny }).map((_, i) => {
         const xi = i % nx;
         const yi = Math.floor(i / nx);
-        const bgAlter = xi % (bgAlterStride * 2) < bgAlterStride;
         return (
           <div
             key={`${xi}-${yi}`}
             style={{
               left: `${(xi * 100) / nx}%`,
               top: `${(yi * 100) / ny}%`,
-              backgroundColor: bgAlter ? "#f0f0f0" : "#fff",
+              background: "#f0f0f0",
             }}
           />
         );

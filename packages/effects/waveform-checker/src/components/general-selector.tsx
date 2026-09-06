@@ -1,5 +1,6 @@
 import { useMemo } from "preact/hooks";
 import { SelectorOption } from "@/utils/selector-option";
+import { cz } from "@/utils/cz";
 
 type Props<T extends string | number> = {
   options: SelectorOption<T>[];
@@ -30,7 +31,11 @@ export function GeneralSelector<T extends string | number>({
     onChange(newValue as T);
   };
   return (
-    <select value={value} onChange={wrapOnChange} className={className}>
+    <select
+      class={cz("bd-#aaa bg-#eee", className)}
+      value={value}
+      onChange={wrapOnChange}
+    >
       {orderedOptions.map((opt) => (
         <option key={opt.value} value={opt.value}>
           {opt.label}

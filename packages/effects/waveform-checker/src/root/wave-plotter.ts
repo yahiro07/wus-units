@@ -34,7 +34,7 @@ export function createWavePlotter(): WavePlotter {
       const y = linearInterpolate(value, -1, 1, ctx.canvas.height, 0, true);
       if (x >= prevX) {
         ctx.clearRect(prevX, 0, x - prevX, ctx.canvas.height);
-        ctx.strokeStyle = "#0cf";
+        ctx.strokeStyle = "#6af";
         ctx.beginPath();
         ctx.moveTo(prevX, prevY);
         ctx.lineTo(x, y);

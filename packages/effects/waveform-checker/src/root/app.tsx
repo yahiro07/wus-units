@@ -4,7 +4,12 @@ import { css, styled } from "@/common/css-realm";
 import { GeneralSelector } from "@/components/general-selector";
 import { GridBackground } from "@/components/grid-background";
 import { LayeredLayout } from "@/components/layered-layout";
-import { actions, useSetupDrivers, useStoreSnapshot } from "@/root/central";
+import {
+  actions,
+  engine,
+  useSetupDrivers,
+  useStoreSnapshot,
+} from "@/root/central";
 import { ChannelId } from "@/root/definitions";
 import { LevelGauge } from "@/root/level-gauge";
 import { cz } from "@/utils/cz";
@@ -84,7 +89,7 @@ const LaneLabel = ({
   return (
     <div
       class={cz(
-        "flex-c w-100px",
+        "flex-c w-40px",
         labelBold && "font-bold",
         onClick && "cursor-pointer",
       )}
@@ -108,7 +113,7 @@ const ChannelLaneContainer = ({
         <GridBackground nx={4} ny={1} />
         <GraphBorderFrame />
         <GraphCanvas
-          canvasSetterFn={(canvas) => actions.setWaveCanvas(channelId, canvas)}
+          canvasSetterFn={(canvas) => engine.setWaveCanvas(channelId, canvas)}
         />
       </LayeredLayout>
     </LaneBox>
@@ -135,11 +140,12 @@ const TimeSpanGauge = () => {
   );
 };
 const cssTimeSpanGauge = css({
-  paddingLeft: "104px",
+  paddingLeft: "44px",
   "> div": {
     width: "201px",
     height: "28px",
     border: "solid 1px #aaa",
+    background: "#eee",
     ...flexC(),
     justifyContent: "space-between",
   },
@@ -172,19 +178,19 @@ const LevelMeterSection = () => {
     <div onClick={actions.toggleMetersLayout} class="flex-c">
       {!altMetersLayout && (
         <div class="flex-vc gap-2">
-          <LevelGauge />
-          <LevelGauge />
+          <LevelGauge channelId="ch1" />
+          <LevelGauge channelId="ch2" />
         </div>
       )}
       {altMetersLayout && (
         <div class="flex-c gap-2">
           <div>
-            <div class="flex-c">A</div>
-            <LevelGauge />
+            <div class="ml-2.25">A</div>
+            <LevelGauge channelId="ch1" />
           </div>
           <div>
-            <div class="flex-c">B</div>
-            <LevelGauge />
+            <div class="ml-2.25">B</div>
+            <LevelGauge channelId="ch2" />
           </div>
         </div>
       )}
@@ -195,7 +201,7 @@ const LevelMeterSection = () => {
 const PageRoot = () => {
   const { activeChannelId } = useStoreSnapshot();
   return (
-    <div class="flex-v gap-2">
+    <div class="flex-v gap-2 bg-#ddd p-6">
       <TopControlBar />
       <div class="flex-h gap-2">
         <div class="flex-v gap-2">

@@ -10,7 +10,7 @@ const root = document.getElementById("app")!;
 document.adoptedStyleSheets = [cssRealm.sheet];
 
 render(
-  <div class="h-dvh flex-c bg-white">
+  <div class="h-dvh flex-c">
     <App />
   </div>,
   root,

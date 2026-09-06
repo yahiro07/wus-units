@@ -6,7 +6,7 @@ import { queryUnitInterface } from "wafer-host/unit-types";
 
 const unitInterface = queryUnitInterface("wafer-v01");
 
-const engine = unitInterface
+export const engine = unitInterface
   ? createAudioAnalysisEngine(unitInterface)
   : createDummyEngine();
 
@@ -31,7 +31,7 @@ function setupUnit() {
   unitInterface?.completeSetup({
     unitAspects: {
       unitType: "effect",
-      viewSize: [940, 520],
+      viewSize: [1024, 492],
     },
     hostCallbacks: {
       setBpm(bpm: number) {
@@ -56,9 +56,6 @@ export const actions = {
   },
   toggleMetersLayout() {
     store.toggleAltMetersLayout();
-  },
-  setWaveCanvas(channelId: ChannelId, canvas: HTMLCanvasElement | null) {
-    engine.setWaveCanvas(channelId, canvas);
   },
   setBarLength(barLength: number) {
     store.setBarLength(barLength);
