@@ -9,7 +9,7 @@ export default defineConfig({
     exclude: ["wafer-host", "snap-store"],
   },
   build: {
-    outDir: "../../../dist/wave-monitor",
+    outDir: "../../../dist/waveform-checker",
     emptyOutDir: true,
   },
   server: { port: 3000 },

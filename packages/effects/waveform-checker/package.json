@@ -1,5 +1,5 @@
 {
-  "name": "wave-monitor",
+  "name": "waveform-checker",
   "private": true,
   "type": "module",
   "scripts": {

@@ -1,5 +1,5 @@
 {
-  "name": "wave-monitor",
+  "name": "waveform-checker",
   "unitType": "effect",
   "protocol": "wafer-v01",
   "integrationFormat": "iframe",
