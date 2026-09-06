@@ -1,0 +1,9 @@
+{
+  "name": "wave-monitor",
+  "unitType": "effect",
+  "protocol": "wafer-v01",
+  "integrationFormat": "iframe",
+  "repositoryUrl": "https://github.com/yahiro07/wafer-units",
+  "author": "yahiro",
+  "license": "MIT"
+}

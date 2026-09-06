@@ -1,0 +1,17 @@
+{
+  "name": "wave-monitor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@preact/preset-vite": "catalog:",
+    "mini-css": "catalog:",
+    "preact": "catalog:",
+    "snap-store": "catalog:"
+  }
+}
