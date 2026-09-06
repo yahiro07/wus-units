@@ -5,9 +5,10 @@ import { GeneralSelector } from "@/components/general-selector";
 import { GridBackground } from "@/components/grid-background";
 import { LayeredLayout } from "@/components/layered-layout";
 import { useSetupDrivers } from "@/root/drivers";
-import { store } from "@/root/store";
+import { actions, store } from "@/root/store";
 import { createSelectorOptions } from "@/utils/selector-option";
 import { flexC, flexH, flexHA, flexV, npx } from "@/utils/utility-styles";
+import { ChannelId } from "@/root/definitions";
 
 const barLengthOptions = createSelectorOptions([
   [0.0625, "1/16"],
@@ -22,17 +23,17 @@ const barLengthOptions = createSelectorOptions([
 ]);
 
 const LaneBox = ({
-  label,
   children,
   height = 100,
+  labelContent,
 }: {
-  label: string;
   children?: ComponentChildren;
   height?: number;
+  labelContent: ComponentChildren;
 }) => {
   return (
     <div class={css(flexH(1))}>
-      <div class={css(flexC(1), { width: npx(100) })}>{label}</div>
+      {labelContent}
       <div
         class={css({
           width: npx(800),
@@ -77,19 +78,42 @@ const GraphBorderFrame = styled.div({
   border: "solid 1px #aaa",
 });
 
+const LaneLabel = ({
+  label,
+  labelBold,
+  onClick,
+}: {
+  label: string;
+  labelBold?: boolean;
+  onClick?: () => void;
+}) => {
+  return (
+    <div
+      class={css(flexC(1), {
+        width: npx(100),
+        fontWeight: labelBold ? "bold" : "normal",
+        cursor: onClick ? "pointer" : undefined,
+      })}
+      onClick={onClick}
+    >
+      {label}
+    </div>
+  );
+};
+
 const ChannelLaneContainer = ({
   channelId,
-  label,
+  labelContent,
 }: {
-  channelId: "ch1" | "ch2";
-  label: string;
+  channelId: ChannelId;
+  labelContent: ComponentChildren;
 }) => {
   const canvasSetterFn = {
     ch1: store.setWavePlotterCanvasCh1,
     ch2: store.setWavePlotterCanvasCh2,
   }[channelId];
   return (
-    <LaneBox label={label} height={200}>
+    <LaneBox height={200} labelContent={labelContent}>
       <LayeredLayout>
         <GridBackground nx={4} ny={1} />
         <GraphBorderFrame />
@@ -150,11 +174,30 @@ const TopControlBar = () => {
 };
 
 const PageRoot = () => {
+  const { activeChannelId } = store.useSnapshot();
   return (
     <div class={css(flexV(2))}>
       <TopControlBar />
-      <ChannelLaneContainer channelId="ch1" label="PORT1" />
-      <ChannelLaneContainer channelId="ch2" label="PORT2" />
+      <ChannelLaneContainer
+        channelId="ch1"
+        labelContent={
+          <LaneLabel
+            label="A"
+            onClick={() => actions.setActiveChannelId("ch1")}
+            labelBold={activeChannelId === "ch1"}
+          />
+        }
+      />
+      <ChannelLaneContainer
+        channelId="ch2"
+        labelContent={
+          <LaneLabel
+            label="B"
+            onClick={() => actions.setActiveChannelId("ch2")}
+            labelBold={activeChannelId === "ch2"}
+          />
+        }
+      />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect } from "preact/hooks";
 import { queryUnitInterface } from "wafer-host/unit-types";
-import { store } from "@/root/store";
+import { ChannelId } from "@/root/definitions";
+import { actions, store } from "@/root/store";
 import { createWavePlotter } from "@/root/wave-plotter";
 
 const unitInterface = queryUnitInterface("wafer-v01");
@@ -14,6 +15,8 @@ function mapTimeToBarPosition(time: number) {
 const wavePlotterCh1 = createWavePlotter();
 const wavePlotterCh2 = createWavePlotter();
 
+let applyOutputRoute: (channelId: ChannelId | null) => void = () => {};
+
 function setupUnit() {
   let startTime = 0;
 
@@ -22,6 +25,7 @@ function setupUnit() {
     return;
   }
 
+  const destinationNode = unitInterface.audioOutputNode;
   const ch1Input = unitInterface.createAdditionalAudioInputNode("1");
   const ch2Input = unitInterface.createAdditionalAudioInputNode("2");
 
@@ -37,6 +41,27 @@ function setupUnit() {
 
   const ch1Analyser = createChannelAnalyser(ch1Input);
   const ch2Analyser = createChannelAnalyser(ch2Input);
+
+  let routedChannelId: ChannelId | null = null;
+
+  applyOutputRoute = (channelId) => {
+    if (channelId === routedChannelId) return;
+    if (routedChannelId === "ch1") {
+      ch1Input.disconnect(destinationNode);
+    } else if (routedChannelId === "ch2") {
+      ch2Input.disconnect(destinationNode);
+    }
+    routedChannelId = null;
+    if (channelId === "ch1") {
+      ch1Input.connect(destinationNode);
+      routedChannelId = "ch1";
+    } else if (channelId === "ch2") {
+      ch2Input.connect(destinationNode);
+      routedChannelId = "ch2";
+    }
+  };
+
+  applyOutputRoute(store.state.activeChannelId);
 
   function feedWavePlotter(
     { analyser, timeDomainData }: typeof ch1Analyser,
@@ -63,6 +88,7 @@ function setupUnit() {
   const timerId = setInterval(updateAnalysers, 20);
 
   const cleanup = () => {
+    applyOutputRoute = () => {};
     ch1Input.disconnect();
     ch2Input.disconnect();
     clearInterval(timerId);
@@ -76,6 +102,15 @@ function setupUnit() {
     hostCallbacks: {
       setBpm(bpm: number) {
         store.setHostBpm(bpm);
+      },
+    },
+    unitCallbacks: {
+      onConnectedTo(_, linkedPortSubtypes) {
+        if (linkedPortSubtypes.includes("audio")) {
+          if (!store.state.activeChannelId) {
+            actions.setActiveChannelId("ch1");
+          }
+        }
       },
     },
     clockHandlers: {
@@ -94,7 +129,12 @@ function setupUnit() {
 
 function setupSynchronization() {
   return store.subscribe((attrs) => {
-    const { barLength, wavePlotterCanvasCh1, wavePlotterCanvasCh2 } = attrs;
+    const {
+      barLength,
+      wavePlotterCanvasCh1,
+      wavePlotterCanvasCh2,
+      activeChannelId,
+    } = attrs;
     if (barLength !== undefined) {
       wavePlotterCh1.setBarLength(barLength);
       wavePlotterCh2.setBarLength(barLength);
@@ -104,6 +144,9 @@ function setupSynchronization() {
     }
     if (wavePlotterCanvasCh2 !== undefined) {
       wavePlotterCh2.setCanvas(wavePlotterCanvasCh2);
+    }
+    if (activeChannelId !== undefined) {
+      applyOutputRoute(activeChannelId);
     }
   });
 }
