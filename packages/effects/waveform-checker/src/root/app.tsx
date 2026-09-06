@@ -5,17 +5,11 @@ import { GeneralSelector } from "@/components/general-selector";
 import { GridBackground } from "@/components/grid-background";
 import { LayeredLayout } from "@/components/layered-layout";
 import { actions, useSetupDrivers, useStoreSnapshot } from "@/root/central";
-import { createSelectorOptions } from "@/utils/selector-option";
-import {
-  flexC,
-  flexH,
-  flexHA,
-  flexV,
-  flexVC,
-  npx,
-} from "@/utils/utility-styles";
 import { ChannelId } from "@/root/definitions";
 import { LevelGauge } from "@/root/level-gauge";
+import { cz } from "@/utils/cz";
+import { createSelectorOptions } from "@/utils/selector-option";
+import { flexC } from "@/utils/utility-styles";
 
 const barLengthOptions = createSelectorOptions([
   [0.0625, "1/16"],
@@ -39,14 +33,9 @@ const LaneBox = ({
   labelContent: ComponentChildren;
 }) => {
   return (
-    <div class={css(flexH(1))}>
+    <div class="flex-h gap-1">
       {labelContent}
-      <div
-        class={css({
-          width: npx(800),
-          height: npx(height),
-        })}
-      >
+      <div class={cz("w-800px", height === 200 ? "h-200px" : "h-100px")}>
         {children}
       </div>
     </div>
@@ -55,7 +44,7 @@ const LaneBox = ({
 
 const HostBpmContainer = () => {
   const { hostBpm } = useStoreSnapshot();
-  return <div class={css(flexH(1))}>hostBpm: {hostBpm || "--"}</div>;
+  return <div class="flex-h gap-1">hostBpm: {hostBpm || "--"}</div>;
 };
 
 const GraphCanvas = ({
@@ -74,9 +63,7 @@ const GraphCanvas = ({
       return () => canvasSetterFn(null);
     }
   }, []);
-  return (
-    <canvas ref={canvasRef} class={css({ width: "100%", height: "100%" })} />
-  );
+  return <canvas ref={canvasRef} class="w-full h-full" />;
 };
 
 const GraphBorderFrame = styled.div({
@@ -96,11 +83,11 @@ const LaneLabel = ({
 }) => {
   return (
     <div
-      class={css(flexC(1), {
-        width: npx(100),
-        fontWeight: labelBold ? "bold" : "normal",
-        cursor: onClick ? "pointer" : undefined,
-      })}
+      class={cz(
+        "flex-c w-100px",
+        labelBold && "font-bold",
+        onClick && "cursor-pointer",
+      )}
       onClick={onClick}
     >
       {label}
@@ -161,14 +148,14 @@ const cssTimeSpanGauge = css({
 const TopControlBar = () => {
   const { barLength } = useStoreSnapshot();
   return (
-    <div class={css(flexHA(4), { justifyContent: "space-between" })}>
+    <div class="flex-ha gap-4 justify-between">
       <TimeSpanGauge />
-      <div class={css(flexHA(4))}>
+      <div class="flex-ha gap-4">
         <HostBpmContainer />
-        <div class={css(flexHA(1))}>
+        <div class="flex-ha gap-1">
           <div>bars</div>
           <GeneralSelector
-            className={css({ height: "28px" })}
+            className="h-28px"
             options={barLengthOptions}
             value={barLength}
             onChange={actions.setBarLength}
@@ -182,21 +169,21 @@ const TopControlBar = () => {
 const LevelMeterSection = () => {
   const { altMetersLayout } = useStoreSnapshot();
   return (
-    <div onClick={actions.toggleMetersLayout} class={css(flexC())}>
+    <div onClick={actions.toggleMetersLayout} class="flex-c">
       {!altMetersLayout && (
-        <div class={css(flexVC(2))}>
+        <div class="flex-vc gap-2">
           <LevelGauge />
           <LevelGauge />
         </div>
       )}
       {altMetersLayout && (
-        <div class={css(flexC(2))}>
+        <div class="flex-c gap-2">
           <div>
-            <div class={css(flexC())}>A</div>
+            <div class="flex-c">A</div>
             <LevelGauge />
           </div>
           <div>
-            <div class={css(flexC())}>B</div>
+            <div class="flex-c">B</div>
             <LevelGauge />
           </div>
         </div>
@@ -208,10 +195,10 @@ const LevelMeterSection = () => {
 const PageRoot = () => {
   const { activeChannelId } = useStoreSnapshot();
   return (
-    <div class={css(flexV(2))}>
+    <div class="flex-v gap-2">
       <TopControlBar />
-      <div class={css(flexH(2))}>
-        <div class={css(flexV(2))}>
+      <div class="flex-h gap-2">
+        <div class="flex-v gap-2">
           <ChannelLaneContainer
             channelId="ch1"
             labelContent={

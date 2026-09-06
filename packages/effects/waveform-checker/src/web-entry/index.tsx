@@ -1,16 +1,16 @@
 import { render } from "preact";
 import "./page.css";
+import "virtual:uno.css";
 import { onIframeUnitUnloading } from "wafer-host/unit-types";
-import { css, cssRealm } from "@/common/css-realm";
+import { cssRealm } from "@/common/css-realm";
 import { App } from "@/root/app";
-import { flexC } from "@/utils/utility-styles";
 
 const root = document.getElementById("app")!;
 
 document.adoptedStyleSheets = [cssRealm.sheet];
 
 render(
-  <div class={css(flexC(), { height: "100dvh", background: "#fff" })}>
+  <div class="h-dvh flex-c bg-white">
     <App />
   </div>,
   root,
