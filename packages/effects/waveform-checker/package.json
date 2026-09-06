@@ -1,0 +1,20 @@
+{
+  "name": "waveform-checker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@preact/preset-vite": "catalog:",
+    "@unocss/preset-wind4": "catalog:",
+    "@unocss/vite": "catalog:",
+    "mini-css": "catalog:",
+    "preact": "catalog:",
+    "snap-store": "catalog:",
+    "unocss": "catalog:"
+  }
+}
