@@ -10,8 +10,11 @@
   },
   "dependencies": {
     "@preact/preset-vite": "catalog:",
+    "@unocss/preset-wind4": "catalog:",
+    "@unocss/vite": "catalog:",
     "mini-css": "catalog:",
     "preact": "catalog:",
-    "snap-store": "catalog:"
+    "snap-store": "catalog:",
+    "unocss": "catalog:"
   }
 }

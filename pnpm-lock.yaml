@@ -263,6 +263,12 @@ importers:
       '@preact/preset-vite':
         specifier: 'catalog:'
         version: 2.10.6(@babel/core@7.29.7)(preact@10.29.8)(vite@8.2.2(@types/node@26.4.0)(jiti@2.7.0))
+      '@unocss/preset-wind4':
+        specifier: 'catalog:'
+        version: 66.7.5
+      '@unocss/vite':
+        specifier: 'catalog:'
+        version: 66.7.5(vite@8.2.2(@types/node@26.4.0)(jiti@2.7.0))
       mini-css:
         specifier: 'catalog:'
         version: '@yahiro07/mini-css@0.1.0'
@@ -272,6 +278,9 @@ importers:
       snap-store:
         specifier: 'catalog:'
         version: 0.1.14(preact@10.29.8)(react@19.2.8)
+      unocss:
+        specifier: 'catalog:'
+        version: 66.7.5(vite@8.2.2(@types/node@26.4.0)(jiti@2.7.0))
 
   packages/modulator/multi-lfo:
     devDependencies:
