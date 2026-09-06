@@ -1,6 +1,6 @@
 import { ChannelId } from "@/root/definitions";
 import { createWavePlotter } from "@/root/wave-plotter";
-import { queryUnitInterface, UnitInterface } from "wafer-host/unit-types";
+import { UnitInterface } from "wafer-host/unit-types";
 
 type AudioAnalysisEngine = {
   setup(): void;
@@ -25,7 +25,7 @@ function createChannelAnalyser(input: AudioNode) {
   };
 }
 
-function createAudioAnalysisEngine(
+export function createAudioAnalysisEngine(
   unitInterface: UnitInterface,
 ): AudioAnalysisEngine {
   const { audioContext } = unitInterface;
@@ -136,7 +136,7 @@ function createAudioAnalysisEngine(
   };
 }
 
-function createDummyEngine(): AudioAnalysisEngine {
+export function createDummyEngine(): AudioAnalysisEngine {
   return {
     setup() {},
     cleanup() {},
@@ -151,9 +151,3 @@ function createDummyEngine(): AudioAnalysisEngine {
     hostStarted() {},
   };
 }
-
-export const unitInterface = queryUnitInterface("wafer-v01");
-
-export const engine = unitInterface
-  ? createAudioAnalysisEngine(unitInterface)
-  : createDummyEngine();

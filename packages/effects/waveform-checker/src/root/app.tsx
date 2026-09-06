@@ -4,8 +4,7 @@ import { css, styled } from "@/common/css-realm";
 import { GeneralSelector } from "@/components/general-selector";
 import { GridBackground } from "@/components/grid-background";
 import { LayeredLayout } from "@/components/layered-layout";
-import { useSetupDrivers } from "@/root/drivers";
-import { actions, store } from "@/root/store";
+import { actions, useSetupDrivers, useStoreSnapshot } from "@/root/central";
 import { createSelectorOptions } from "@/utils/selector-option";
 import {
   flexC,
@@ -55,7 +54,7 @@ const LaneBox = ({
 };
 
 const HostBpmContainer = () => {
-  const { hostBpm } = store.useSnapshot();
+  const { hostBpm } = useStoreSnapshot();
   return <div class={css(flexH(1))}>hostBpm: {hostBpm || "--"}</div>;
 };
 
@@ -116,23 +115,21 @@ const ChannelLaneContainer = ({
   channelId: ChannelId;
   labelContent: ComponentChildren;
 }) => {
-  const canvasSetterFn = {
-    ch1: store.setWavePlotterCanvasCh1,
-    ch2: store.setWavePlotterCanvasCh2,
-  }[channelId];
   return (
     <LaneBox height={200} labelContent={labelContent}>
       <LayeredLayout>
         <GridBackground nx={4} ny={1} />
         <GraphBorderFrame />
-        <GraphCanvas canvasSetterFn={canvasSetterFn} />
+        <GraphCanvas
+          canvasSetterFn={(canvas) => actions.setWaveCanvas(channelId, canvas)}
+        />
       </LayeredLayout>
     </LaneBox>
   );
 };
 
 const TimeSpanGauge = () => {
-  const { barLength, hostBpm } = store.useSnapshot();
+  const { barLength, hostBpm } = useStoreSnapshot();
   const unitLength = barLength / 4;
   const unitLengthText = unitLength >= 1 ? unitLength : `1/${1 / unitLength}`;
   const unitMs = unitLength * (240 / hostBpm) * 1000;
@@ -162,6 +159,7 @@ const cssTimeSpanGauge = css({
 });
 
 const TopControlBar = () => {
+  const { barLength } = useStoreSnapshot();
   return (
     <div class={css(flexHA(4), { justifyContent: "space-between" })}>
       <TimeSpanGauge />
@@ -172,8 +170,8 @@ const TopControlBar = () => {
           <GeneralSelector
             className={css({ height: "28px" })}
             options={barLengthOptions}
-            value={1}
-            onChange={store.setBarLength}
+            value={barLength}
+            onChange={actions.setBarLength}
           />
         </div>
       </div>
@@ -182,7 +180,7 @@ const TopControlBar = () => {
 };
 
 const LevelMeterSection = () => {
-  const { altMetersLayout } = store.useSnapshot();
+  const { altMetersLayout } = useStoreSnapshot();
   return (
     <div onClick={actions.toggleMetersLayout} class={css(flexC())}>
       {!altMetersLayout && (
@@ -208,7 +206,7 @@ const LevelMeterSection = () => {
 };
 
 const PageRoot = () => {
-  const { activeChannelId } = store.useSnapshot();
+  const { activeChannelId } = useStoreSnapshot();
   return (
     <div class={css(flexV(2))}>
       <TopControlBar />
