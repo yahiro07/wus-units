@@ -258,7 +258,7 @@ importers:
         specifier: 'catalog:'
         version: 0.1.14(preact@10.29.8)(react@19.2.8)
 
-  packages/effects/wave-monitor:
+  packages/effects/waveform-checker:
     dependencies:
       '@preact/preset-vite':
         specifier: 'catalog:'

@@ -7,8 +7,16 @@ import { LayeredLayout } from "@/components/layered-layout";
 import { useSetupDrivers } from "@/root/drivers";
 import { actions, store } from "@/root/store";
 import { createSelectorOptions } from "@/utils/selector-option";
-import { flexC, flexH, flexHA, flexV, npx } from "@/utils/utility-styles";
+import {
+  flexC,
+  flexH,
+  flexHA,
+  flexV,
+  flexVC,
+  npx,
+} from "@/utils/utility-styles";
 import { ChannelId } from "@/root/definitions";
+import { LevelGauge } from "@/root/level-gauge";
 
 const barLengthOptions = createSelectorOptions([
   [0.0625, "1/16"],
@@ -173,31 +181,62 @@ const TopControlBar = () => {
   );
 };
 
+const LevelMeterSection = () => {
+  const { altMetersLayout } = store.useSnapshot();
+  return (
+    <div onClick={actions.toggleMetersLayout} class={css(flexC())}>
+      {!altMetersLayout && (
+        <div class={css(flexVC(2))}>
+          <LevelGauge />
+          <LevelGauge />
+        </div>
+      )}
+      {altMetersLayout && (
+        <div class={css(flexC(2))}>
+          <div>
+            <div class={css(flexC())}>A</div>
+            <LevelGauge />
+          </div>
+          <div>
+            <div class={css(flexC())}>B</div>
+            <LevelGauge />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const PageRoot = () => {
   const { activeChannelId } = store.useSnapshot();
   return (
     <div class={css(flexV(2))}>
       <TopControlBar />
-      <ChannelLaneContainer
-        channelId="ch1"
-        labelContent={
-          <LaneLabel
-            label="A"
-            onClick={() => actions.setActiveChannelId("ch1")}
-            labelBold={activeChannelId === "ch1"}
+      <div class={css(flexH(2))}>
+        <div class={css(flexV(2))}>
+          <ChannelLaneContainer
+            channelId="ch1"
+            labelContent={
+              <LaneLabel
+                label="A"
+                onClick={() => actions.setActiveChannelId("ch1")}
+                labelBold={activeChannelId === "ch1"}
+              />
+            }
           />
-        }
-      />
-      <ChannelLaneContainer
-        channelId="ch2"
-        labelContent={
-          <LaneLabel
-            label="B"
-            onClick={() => actions.setActiveChannelId("ch2")}
-            labelBold={activeChannelId === "ch2"}
+          <ChannelLaneContainer
+            channelId="ch2"
+            labelContent={
+              <LaneLabel
+                label="B"
+                onClick={() => actions.setActiveChannelId("ch2")}
+                labelBold={activeChannelId === "ch2"}
+              />
+            }
           />
-        }
-      />
+        </div>
+        <LevelMeterSection />
+      </div>
     </div>
   );
 };
